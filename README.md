@@ -67,3 +67,12 @@ https://github.com/gallantg762/mjx-docker
 ## Strength
 
 TBD
+
+### Supervised Learning Accuracy
+
+| Metric | Value |
+|--------|-------|
+| Overall accuracy | 77.1% |
+| Discard + Tsumogiri accuracy | 73.1% |
+
+For reference, Suphx [Li et al., 2020] reports 76.7% accuracy for its dedicated discard model. Note that direct comparison is not straightforward: Suphx uses a separate 34-class model exclusively for discard decisions, whereas this model handles all 181 action types in a single network.
