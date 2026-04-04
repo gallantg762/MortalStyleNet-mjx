@@ -47,6 +47,10 @@ Reference: [mjx action.h](https://github.com/mjx-project/mjx/blob/fcdac0eabf854c
 
 Download from Google Drive:
 https://drive.google.com/drive/folders/1nimmgp6KBEwywAVJsQTty-DQtdXL66Oy
+ 
+## Requirements
+ 
+GPU recommended for reasonable inference speed.
 
 ## Usage
 
