@@ -54,7 +54,7 @@ GPU recommended for reasonable inference speed.
 
 ## Usage
 
-See `smoke_test.py`.
+See `test.py`.
 
 Requires mjx — Docker image available at:
 https://github.com/gallantg762/mjx-docker
