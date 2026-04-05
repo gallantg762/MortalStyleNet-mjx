@@ -1,78 +1,55 @@
 # MortalStyleNet-mjx
 
-> **Note:** This is a personal study project. Not intended for production use.
+A riichi mahjong AI agent for [mjx](https://github.com/mjx-project/mjx).
 
-A riichi mahjong AI agent for [mjx](https://github.com/mjx-project/mjx), trained with supervised learning on Tenhou houou-level game logs.
+> **Note:** This is a personal study project and is not intended for production use.
 
 ## Overview
-
-A simplified Mortal-inspired agent trained on 16,000 hanchan games from Tenhou houou-level players using supervised learning only.
-
-## Files
-
-| File | Description |
-|------|-------------|
-| `mortal_like_agent.py` | Model architecture and agent class |
-| `mortal_style_feature.py` | Feature encoder (506-channel) |
-| `requirements.txt` | Python dependencies |
-| `smoke_test.py` | Usage example |
-
-## Network
-
-- **Architecture**: 1D Conv + Channel Attention + Mish + BatchNorm (MortalStyleNet)
-- **Input**: 506-channel feature vector — see `mortal_style_feature.py`
-- **Output**: 181-dimensional action logits
-
-| Index | Action |
-|-------|--------|
-| 0–33 | Discard m1–rd |
-| 34, 35, 36 | Discard m5(red), p5(red), s5(red) |
-| 37–70 | Tsumogiri m1–rd |
-| 71, 72, 73 | Tsumogiri m5(red), p5(red), s5(red) |
-| 74–94 | Chi m1m2m3 – s7s8s9 |
-| 95–103 | Chi with red 5 |
-| 104–137 | Pon m1–rd |
-| 138, 139, 140 | Pon m5(w/ red), s5(w/ red), p5(w/ red) |
-| 141–174 | Kan m1–rd |
-| 175 | Tsumo |
-| 176 | Ron |
-| 177 | Riichi |
-| 178 | Kyuushu |
-| 179 | No |
-| 180 | Dummy |
-
-Reference: [mjx action.h](https://github.com/mjx-project/mjx/blob/fcdac0eabf854c2a530168eda989479f41681ef9/include/mjx/internal/action.h#L45-L61)
-
-## Weights
-
-Download from Google Drive:
-https://drive.google.com/drive/folders/1nimmgp6KBEwywAVJsQTty-DQtdXL66Oy
- 
-## Requirements
- 
-GPU recommended for reasonable inference speed.
-
-## Usage
-
-See `test.py`.
-
-Requires mjx — Docker image available at:
-https://github.com/gallantg762/mjx-docker
-
-## Live
-
-- mjai.app: https://mjai.app/users/gallantg762
-- riichi.dev: https://riichi.dev/bots/74
+- **Core Architecture**: MortalStyleNet (1D Conv + Channel Attention)
+- **Current Method**: Supervised Learning using 16,000 Tenhou Houou-level games.
 
 ## Strength
 
-TBD
+### Discard Accuracy
+| Model | Accuracy |
+| :--- | :--- |
+| **MortalStyleNet-mjx** | **73.1%** |
+| Suphx | 76.7% |
 
-### Supervised Learning Accuracy
+### vs Other Bots
+Matches against [akochan](https://github.com/Apricot-S/akochan-docker) and [mjai-manue](https://github.com/gimite/mjai-manue).
 
-| Metric | Value |
-|--------|-------|
-| Overall accuracy | 77.1% |
-| Discard + Tsumogiri accuracy | 73.1% |
+#### Tonpu (500 games)
+| Bot | Average Rank |
+| :--- | :--- |
+| 👑 akochan | 2.196 |
+| **MortalStyleNet-mjx** | **2.316** |
+| mjai-manue (x2) | 2.752 |
 
-For reference, Suphx [Li et al., 2020] reports 76.7% accuracy for its dedicated discard model. Note that direct comparison is not straightforward: Suphx uses a separate 34-class model exclusively for discard decisions, whereas this model handles all 181 action types in a single network.
+#### Tonnan (200 games)
+| Bot | Average Rank |
+| :--- | :--- |
+| 👑 akochan | 2.151 |
+| **MortalStyleNet-mjx** | **2.343** |
+| mjai-manue (x2) | 2.753 |
+
+## Architecture
+- **Input**: 506-channel feature vector.
+- **Output**: 181-dimensional action logits.
+    - Follows the [mjx action.h](https://github.com/mjx-project/mjx/blob/fcdac0eabf854c2a530168eda989479f41681ef9/include/mjx/internal/action.h#L45-L61) definition.
+- **Inference**: GPU recommended for high-speed decision making.
+
+## Files
+- `mortal_like_agent.py`: Model architecture and agent class.
+- `mortal_style_feature.py`: Feature encoder.
+- `mjai_tcp_client.py`: TCP client for connecting to Mjai servers (e.g., mjai.app).
+- `mjai_gateway.py`: Protocol converter (Mjai ↔ mjx).
+- `test.py`: Usage examples.
+
+## Getting Started
+1. **Weights**: Download pre-trained SL weights from [Google Drive](https://drive.google.com/drive/folders/1nimmgp6KBEwywAVJsQTty-DQtdXL66Oy).
+2. **Environment**: It is recommended to use the [mjx-docker](https://github.com/gallantg762/mjx-docker) image for a consistent setup.
+
+## Live Demo
+- [mjai.app](https://mjai.app/users/gallantg762)
+- [riichi.dev](https://riichi.dev/bots/74)
