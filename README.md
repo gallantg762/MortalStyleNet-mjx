@@ -1,28 +1,29 @@
 # MortalStyleNet-mjx
 
 Riichi mahjong AI agent for [mjx](https://github.com/mjx-project/mjx).  
+
 Architecture: MortalStyleNet (1D Conv + Channel Attention), trained on 16,000 Tenhou Houou-level games via supervised learning.
 
-> **Note:** This is a personal study project. mjx has known compatibility issues with Tenhou; other simulators are recommended for training and evaluation.
+This is just a personal study project.
 
-## Performance
+## Strength
 
-**Tenhou** — Advanced / East-South (上南), 2 Dan, avg. rank 2.45  
-[[Log 1]](https://tenhou.net/3/?log=2026040609gm-0089-0000-443c33c4&tw=2) [[Log 2]](https://tenhou.net/3/?log=2026040610gm-0089-0000-05015719&tw=2) [[Log 3]](https://tenhou.net/3/?log=2026040610gm-0089-0000-d354a97a&tw=0)
+### Tenhou
 
-**Discard Accuracy**
+TBD
+
+### vs Bots ([akochan](https://github.com/Apricot-S/akochan-docker), [mjai-manue](https://github.com/gimite/mjai-manue))
+
+| | akochan | MortalStyleNet-mjx | mjai-manue (×2) |
+| :--- | :--- | :--- | :--- |
+| Tonnan (220game) | **2.144** | 2.258 | 2.799 |
+
+### Discard Accuracy
 
 | Model | Accuracy |
 | :--- | :--- |
 | MortalStyleNet-mjx | 73.1% |
 | Suphx | 76.7% |
-
-**vs Bots** ([akochan](https://github.com/Apricot-S/akochan-docker), [mjai-manue](https://github.com/gimite/mjai-manue))
-
-| | akochan | MortalStyleNet-mjx | mjai-manue (×2) |
-| :--- | :--- | :--- | :--- |
-| Tonpu (500g) | **2.196** | 2.316 | 2.752 |
-| Tonnan (200g) | **2.151** | 2.343 | 2.753 |
 
 ## Architecture
 

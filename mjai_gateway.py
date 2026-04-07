@@ -170,11 +170,11 @@ class OpenCodeGen:
                 candidates.remove(t)
             for e_raw in obs["publicObservation"]["events"][:-1]:
                 if any(k in e_raw for k in ['tile', 'open']):
-                    e = Event(e_raw)
-                    if e.type() == EventType.EVENT_TYPE_DRAW:
+                    e = Event(json.dumps(e_raw, separators=(",", ":")))
+                    if e.type() == EventType.DRAW:
                         t = e.tile().id()
                         if t in candidates: candidates.remove(t)
-                    elif e.type() in [EventType.EVENT_TYPE_CHI, EventType.EVENT_TYPE_PON]:
+                    elif e.type() in [EventType.CHI, EventType.PON]:
                         for t in [tile.id() for tile in e.open().tiles()]:
                             if t in candidates: candidates.remove(t)
             consume_tiles_from_hand = candidates[:2]
@@ -210,10 +210,10 @@ class OpenCodeGen:
                         if t in c_cands: c_cands.remove(t)
                     for e_raw in obs["publicObservation"]["events"]:
                         if any(k in e_raw for k in ['tile', 'open']):
-                            e = Event(e_raw)
-                            if e.type() == EventType.EVENT_TYPE_DRAW:
+                            e = Event(json.dumps(e_raw, separators=(",", ":")))
+                            if e.type() == EventType.DRAW:
                                 if e.tile().id() in c_cands: c_cands.remove(e.tile().id())
-                            elif e.type() in [EventType.EVENT_TYPE_CHI, EventType.EVENT_TYPE_PON]:
+                            elif e.type() in [EventType.CHI, EventType.PON]:
                                 for t in [tile.id() for tile in e.open().tiles()]:
                                     if t in c_cands: c_cands.remove(t)
                     res_consumes.append(c_cands[0])
@@ -237,6 +237,17 @@ class MjxGateway:
         self.base_obs = {}
         self.hai_offset = {}
         self.last_discard_actor = 0
+        self.initial_oya = None
+
+    def _to_mjx_id(self, mjai_player_id: int) -> int:
+        if self.initial_oya is None:
+            return mjai_player_id
+        return (mjai_player_id - self.initial_oya + 4) % 4
+
+    def _to_mjai_id(self, mjx_player_id: int) -> int:
+        if self.initial_oya is None:
+            return mjx_player_id
+        return (mjx_player_id + self.initial_oya) % 4
 
     def get_obs_open(self) -> list[int]:
         if not self.base_obs: raise ValueError("Kyoku not started.")
@@ -258,33 +269,57 @@ class MjxGateway:
         return obs.legal_actions()
 
     def _get_mjx_obs(self, mjai_events):
-        for mjai_event in mjai_events:
+        for raw_mjai_event in mjai_events:
+            mjai_event = copy.copy(raw_mjai_event)
             mjai_event_type = mjai_event.get("type")
+
             if mjai_event_type == "start_kyoku":
+                if mjai_event["kyoku"] == 1 and mjai_event["bakaze"] == "E" and mjai_event["honba"] == 0:
+                    self.initial_oya = mjai_event["oya"]
+                if self.initial_oya is None:
+                    self.initial_oya = (mjai_event["oya"] - (mjai_event["kyoku"] - 1) + 4) % 4
+
+                mjx_my_id = self._to_mjx_id(self.actor_id)
                 tehais = [to_mjx_tile(s) for s in mjai_event["tehais"][self.actor_id]]
                 self.hai_offset = {to_mjx_tile(mjai_event["dora_marker"]): 1}
                 for i, hai in enumerate(tehais):
                     tehais[i] += self.hai_offset.get(hai, 0)
                     self.hai_offset[hai] = self.hai_offset.get(hai, 0) + 1
-                oya = mjai_event["oya"]
-                rotated = [f"player_{(oya + i) % 4}" for i in range(4)]
+                
+                mjx_scores = [0] * 4
+                for i in range(4):
+                    mjx_scores[self._to_mjx_id(i)] = mjai_event["scores"][i]
+
                 self.base_obs = {
-                    "who": self.actor_id,
+                    "who": mjx_my_id,
                     "publicObservation": {
-                        "playerIds": rotated,
-                        "initScore": {"tens": mjai_event["scores"], "round": (mjai_event["kyoku"] - 1) + (0 if mjai_event["bakaze"] == "E" else 4), "honba": mjai_event["honba"], "riichi": mjai_event["kyotaku"]},
+                        "playerIds": ["player_0", "player_1", "player_2", "player_3"],
+                        "initScore": {
+                            "tens": mjx_scores, 
+                            "round": (mjai_event["kyoku"] - 1) + (0 if mjai_event["bakaze"] == "E" else 4), 
+                            "honba": mjai_event["honba"], 
+                            "riichi": mjai_event["kyotaku"]
+                        },
                         "doraIndicators": [to_mjx_tile(mjai_event["dora_marker"])],
                         "events": [],
                     },
                     "privateObservation": {
-                        "who": self.actor_id,
+                        "who": mjx_my_id,
                         "initHand": {"closedTiles": tehais},
                         "drawHistory": [],
                         "currHand": {"closedTiles": sorted(tehais), "opens": []}
                     }
                 }
-            elif mjai_event_type == "tsumo":
-                if self.actor_id == mjai_event["actor"]:
+
+            if "actor" in mjai_event:
+                mjai_event["actor"] = self._to_mjx_id(mjai_event["actor"])
+            if "target" in mjai_event:
+                mjai_event["target"] = self._to_mjx_id(mjai_event["target"])
+
+            mjx_my_id = self._to_mjx_id(self.actor_id)
+
+            if mjai_event_type == "tsumo":
+                if mjx_my_id == mjai_event["actor"]:
                     hai = to_mjx_tile(mjai_event["pai"])
                     hai_ = hai + self.hai_offset.get(hai, 0)
                     self.hai_offset[hai] = self.hai_offset.get(hai, 0) + 1
@@ -297,7 +332,7 @@ class MjxGateway:
             elif mjai_event_type == "dahai":
                 hai = to_mjx_tile(mjai_event["pai"])
                 self.last_discard_actor = mjai_event["actor"]
-                if self.actor_id == mjai_event["actor"]:
+                if mjx_my_id == mjai_event["actor"]:
                     remove_candidates = [t for t in self.base_obs["privateObservation"]["currHand"]["closedTiles"] if to_mjx_tile(to_mjai_tile(t)) == hai]
                     if remove_candidates:
                         hai_ = remove_candidates[0]
@@ -325,7 +360,7 @@ class MjxGateway:
                 else:
                     code, consumed = OpenCodeGen.from_mjai_kan(mjai_event, self.base_obs)
                     e_type = "EVENT_TYPE_OPEN_KAN"
-                if self.actor_id == mjai_event["actor"]:
+                if mjx_my_id == mjai_event["actor"]:
                     self.base_obs["privateObservation"]["currHand"]["opens"].append(code)
                     for t in consumed: self.base_obs["privateObservation"]["currHand"]["closedTiles"].remove(t)
                 row = {"type": e_type, "open": code}
@@ -337,7 +372,7 @@ class MjxGateway:
                 self.base_obs["publicObservation"]["events"].append(row)
             elif mjai_event_type == "kakan":
                 code, consumed, c_tile, p_code = OpenCodeGen.from_mjai_kakan(mjai_event, self.base_obs)
-                if self.actor_id == mjai_event["actor"]:
+                if mjx_my_id == mjai_event["actor"]:
                     self.base_obs["privateObservation"]["currHand"]["opens"].append(code)
                     self.base_obs["privateObservation"]["currHand"]["opens"].remove(p_code)
                     self.base_obs["privateObservation"]["currHand"]["closedTiles"].remove(c_tile)
@@ -382,15 +417,15 @@ class MjxGateway:
             return json_dumps({"type": "ryukyoku", "actor": self.actor_id})
         if action_type == ActionType.OPEN_KAN:
             op = mjx_action.open()
-            return json_dumps({"type": "daiminkan", "actor": self.actor_id, "target": self.last_discard_actor, "pai": to_mjai_tile(op.stolen_tile().id()), "consumed": [to_mjai_tile(tile.id()) for tile in op.tiles_from_hand()]})
+            return json_dumps({"type": "daiminkan", "actor": self.actor_id, "target": self._to_mjai_id(self.last_discard_actor), "pai": to_mjai_tile(op.stolen_tile().id()), "consumed": [to_mjai_tile(tile.id()) for tile in op.tiles_from_hand()]})
         if action_type == ActionType.RON:
-            return json_dumps({"type": "hora", "pai": to_mjai_tile(action_json.get("tile", 0)), "actor": self.actor_id, "target": self.base_obs["publicObservation"]["events"][-1].get("who", 0)})
+            return json_dumps({"type": "hora", "pai": to_mjai_tile(action_json.get("tile", 0)), "actor": self.actor_id, "target": self._to_mjai_id(self.base_obs["publicObservation"]["events"][-1].get("who", 0))})
         if action_type == ActionType.CHI:
             op = mjx_action.open()
             return json_dumps({"type": "chi", "actor": self.actor_id, "target": self.actor_id - 1 if self.actor_id > 0 else 3, "pai": to_mjai_tile(op.stolen_tile().id()), "consumed": [to_mjai_tile(tile.id()) for tile in op.tiles_from_hand()]})
         if action_type == ActionType.PON:
             op = mjx_action.open()
-            return json_dumps({"type": "pon", "actor": self.actor_id, "target": self.last_discard_actor, "pai": to_mjai_tile(op.stolen_tile().id()), "consumed": [to_mjai_tile(tile.id()) for tile in op.tiles_from_hand()]})
+            return json_dumps({"type": "pon", "actor": self.actor_id, "target": self._to_mjai_id(self.last_discard_actor), "pai": to_mjai_tile(op.stolen_tile().id()), "consumed": [to_mjai_tile(tile.id()) for tile in op.tiles_from_hand()]})
         return json_dumps({"type": "none"})
 
     def react(self, events_str: str) -> str:
