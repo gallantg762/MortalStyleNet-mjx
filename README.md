@@ -10,7 +10,9 @@ This is just a personal study project.
 
 ### Tenhou
 
-TBD
+Advanced / East-South (上南), avg. rank 2.4, 3 Dan
+
+Sample Log [1](https://tenhou.net/3/?log=2026040709gm-0089-0000-0f139de7&tw=0) [2](https://tenhou.net/3/?log=2026040709gm-0089-0000-c8dd902f&tw=2)
 
 ### vs Bots ([akochan](https://github.com/Apricot-S/akochan-docker), [mjai-manue](https://github.com/gimite/mjai-manue))
 
